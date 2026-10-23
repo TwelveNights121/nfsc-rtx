@@ -8,6 +8,8 @@ on:
 jobs:
   build:
     runs-on: windows-2022
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
         with:
@@ -36,3 +38,18 @@ jobs:
             build/bin/Release/*.dll
             build/bin/Release/*.pdb
           if-no-files-found: error
+
+      - name: Publish binary to builds branch (git-reachable)
+        shell: pwsh
+        run: |
+          $out = "out_builds"
+          New-Item -ItemType Directory -Path $out -Force | Out-Null
+          Copy-Item build/bin/Release/*.asi $out
+          cd $out
+          git init -q
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          git checkout -q -b builds
+          git add -A
+          git commit -q -m "build ${{ github.sha }}"
+          git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}" builds
