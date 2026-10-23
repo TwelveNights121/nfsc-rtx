@@ -8,6 +8,7 @@
 #include "rain.hpp"
 #include "remix_vars.hpp"
 #include "renderer.hpp"
+#include "car_lights.hpp"
 #include "shared/common/imgui_helper.hpp"
 #include "shared/common/font_awesome_solid_900.hpp"
 #include "shared/common/font_defines.hpp"
@@ -59,6 +60,14 @@ namespace comp
 
 	bool imgui::input_message(const UINT message_type, const WPARAM wparam, const LPARAM lparam)
 	{
+		// TwelveNights: F7 = ocultar/mostrar HUD (modo screenshot), F8 = luces de carros on/off
+		if (message_type == WM_KEYUP && wparam == VK_F7) {
+			get()->m_screenshot_mode = !get()->m_screenshot_mode;
+		}
+		if (message_type == WM_KEYUP && wparam == VK_F8) {
+			car_lights::settings().enabled = !car_lights::settings().enabled;
+		}
+
 		if (message_type == WM_KEYUP && wparam == VK_F4) 
 		{
 			const auto& io = ImGui::GetIO();
@@ -1057,6 +1066,41 @@ namespace comp
 				ImGui::PushID("flares");
 				compsettings_bool_widget("Draw Flares", cs->flare_enabled);
 				SET_CHILD_WIDGET_WIDTH_MAN(200.0f); compsettings_float_widget("Flare Alpha Multiplier", cs->flare_alpha_multiplier, 0.0f, 1.0f, 0.01f);
+				ImGui::PopID();
+			});
+
+		SPACEY4;
+
+		ImGui::Widget_CategoryWithVerticalLabel("Car Lights (TN)", [&]()
+			{
+				ImGui::PushID("tn_carlights");
+				auto& s = car_lights::settings();
+				const auto& st = car_lights::last_stats();
+
+				ImGui::Checkbox("Enable Car Lights (F8)", &s.enabled);
+				ImGui::Checkbox("Headlights", &s.headlights); ImGui::SameLine();
+				ImGui::Checkbox("Rear/Brake", &s.rearlights); ImGui::SameLine();
+				ImGui::Checkbox("Street Flares", &s.street_flares);
+				ImGui::Checkbox("Hide HUD (F7)", &imgui::get()->m_screenshot_mode);
+
+				SET_CHILD_WIDGET_WIDTH_MAN(200.0f); ImGui::DragFloat("Head Intensity", &s.head_intensity, 1.0f, 0.0f, 5000.0f);
+				SET_CHILD_WIDGET_WIDTH_MAN(200.0f); ImGui::DragFloat("Head Cone (deg)", &s.head_cone_deg, 0.25f, 5.0f, 180.0f);
+				SET_CHILD_WIDGET_WIDTH_MAN(200.0f); ImGui::DragFloat("Head Softness", &s.head_softness, 0.01f, 0.0f, 1.0f);
+				SET_CHILD_WIDGET_WIDTH_MAN(200.0f); ImGui::DragFloat("Head Pitch Down (deg)", &s.head_pitch_down_deg, 0.1f, -20.0f, 30.0f);
+				SET_CHILD_WIDGET_WIDTH_MAN(200.0f); ImGui::DragFloat("Head Radius", &s.head_radius, 0.005f, 0.005f, 1.0f);
+				SET_CHILD_WIDGET_WIDTH_MAN(200.0f); ImGui::DragFloat("Rear Intensity", &s.rear_intensity, 0.1f, 0.0f, 500.0f);
+				SET_CHILD_WIDGET_WIDTH_MAN(200.0f); ImGui::DragFloat("Brake Boost", &s.brake_boost, 0.05f, 1.0f, 20.0f);
+				SET_CHILD_WIDGET_WIDTH_MAN(200.0f); ImGui::DragFloat("Brake Alpha Threshold", &s.brake_alpha_threshold, 0.01f, 0.0f, 1.0f);
+				SET_CHILD_WIDGET_WIDTH_MAN(200.0f); ImGui::DragFloat("Car Match Dist", &s.car_match_dist, 0.05f, 0.5f, 10.0f);
+				SET_CHILD_WIDGET_WIDTH_MAN(200.0f); ImGui::DragFloat("Max Dist", &s.max_dist, 1.0f, 5.0f, 1000.0f);
+				SET_CHILD_WIDGET_WIDTH_MAN(200.0f); ImGui::DragInt("Max Lights", &s.max_lights, 0.2f, 0, 256);
+
+				ImGui::Text("flares up:%d vb:%d | vbfail:%d declfail:%d", st.flares_up, st.flares_vb, st.vb_lock_fail, st.decl_fail);
+				ImGui::Text("cars:%d (fallback:%d) | head:%d rear:%d street:%d skip:%d", st.cars, st.cars_fallback, st.head, st.rear, st.street, st.skipped);
+				for (int k = 0; k < st.first_count; k++) {
+					const auto& f = st.first[k];
+					ImGui::Text("#%d pos(%.1f %.1f %.1f) col(%.2f %.2f %.2f) a%.2f", k, f.pos.x, f.pos.y, f.pos.z, f.color.x, f.color.y, f.color.z, f.alpha);
+				}
 				ImGui::PopID();
 			});
 

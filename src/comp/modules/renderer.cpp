@@ -5,6 +5,7 @@
 #include "d3d9ex.hpp"
 #include "d3dxeffects.hpp"
 #include "imgui.hpp"
+#include "car_lights.hpp"
 
 namespace comp
 {
@@ -731,6 +732,26 @@ namespace comp
 				render_with_ff = true;
 			}
 
+			// TwelveNights: guardar la posicion/direccion de cada carroceria de carro
+			if (g_rendering_mdl && !g_rendering_mdl->is_tri_stripped && g_rendering_mdl->mesh.entry && g_rendering_mdl->local_to_world
+				&& (g_rendering_mdl->mesh.entry->type == game::CarShader || g_rendering_mdl->mesh.entry->type == game::CARNORMALMAP))
+			{
+				const auto& e = *g_rendering_mdl->mesh.entry;
+				const float size_x = e.bbox_max.x - e.bbox_min.x;
+				const float size_y = e.bbox_max.y - e.bbox_min.y;
+				// solo piezas grandes (carroceria), no ruedas
+				if ((std::max)(size_x, size_y) > 2.5f) {
+					car_lights::on_car_draw(g_rendering_mdl->local_to_world);
+				}
+			}
+			else if (tech == effects::ETECH::CAR || tech == effects::ETECH::CAR_NORMALMAP)
+			{
+				D3DXMATRIX w;
+				if (SUCCEEDED(dev->GetTransform(D3DTS_WORLD, &w))) {
+					car_lights::on_car_draw(&w, true);
+				}
+			}
+
 			// Fix T-Pose on skinned meshes by rendering them via shaders
 			if (g_rendering_mdl && g_rendering_mdl->blending_matrices && g_rendering_mdl->mesh.entry
 				&& (g_rendering_mdl->mesh.entry->type == game::WorldBoneShader || g_rendering_mdl->mesh.entry->type == game::UCAP))
@@ -804,6 +825,11 @@ namespace comp
 			if (tech == effects::ETECH::FLARES || tech == effects::ETECH::STREAK_FLARES)
 			{
 				render_with_ff = false;
+
+				// TwelveNights: luces reales para faros/stops de todos los carros
+				if (tech == effects::ETECH::FLARES) {
+					car_lights::on_flare_draw_vb(dev, BaseVertexIndex, MinVertexIndex, NumVertices);
+				}
 
 				// enable vertex colors
 				if (cs->vertex_colors_particles._bool()) {
@@ -1346,6 +1372,11 @@ namespace comp
 			if (tech == effects::ETECH::FLARES || tech == effects::ETECH::STREAK_FLARES)
 			{
 				render_with_ff = false;
+
+				// TwelveNights: luces reales para faros/stops de todos los carros
+				if (tech == effects::ETECH::FLARES) {
+					car_lights::on_flare_draw_up(dev, MinVertexIndex, NumVertices, pVertexStreamZeroData, VertexStreamZeroStride);
+				}
 
 				// enable vertex colors
 				if (cs->vertex_colors_particles._bool()) {

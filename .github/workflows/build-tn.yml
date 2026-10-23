@@ -1,0 +1,38 @@
+name: Build TwelveNights
+
+on:
+  push:
+    branches: [ feat/car-lights ]
+  workflow_dispatch: {}
+
+jobs:
+  build:
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+          lfs: false
+
+      - uses: microsoft/setup-msbuild@v2
+
+      - name: Generate project files
+        run: tools/premake5 vs2022
+
+      - uses: ammaraskar/msvc-problem-matcher@master
+
+      - name: Build Release
+        run: msbuild /m /v:minimal /p:Configuration=Release /p:Platform=Win32 build/nfsc-rtx.sln
+
+      - name: List outputs
+        shell: pwsh
+        run: Get-ChildItem -Recurse build/bin | Select-Object FullName, Length
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nfsc-rtx-tn
+          path: |
+            build/bin/Release/*.asi
+            build/bin/Release/*.dll
+            build/bin/Release/*.pdb
+          if-no-files-found: error

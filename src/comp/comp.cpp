@@ -6,6 +6,7 @@
 #include "modules/rain.hpp"
 #include "modules/remix_vars.hpp"
 #include "modules/renderer.hpp"
+#include "modules/car_lights.hpp"
 #include "shared/common/remix_api.hpp"
 
 namespace comp
@@ -243,6 +244,9 @@ namespace comp
 				m_distant_light.m_handle = nullptr;
 			}
 		}
+
+		// TwelveNights: luces de faros/stops de todos los carros
+		car_lights::frame();
 	}
 
 
